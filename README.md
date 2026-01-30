@@ -1,2 +1,263 @@
-# Minecraft-WEB-GAME-
-A brilliant minecraft game
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WyrmGate: Full Controls</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+        
+        /* Joystick UI */
+        #ui { position: absolute; bottom: 40px; left: 0; width: 100%; height: 150px; pointer-events: none; }
+        #joy-base { 
+            position: absolute; bottom: 20px; left: 40px; 
+            width: 120px; height: 120px; background: rgba(255,255,255,0.2); 
+            border: 2px solid white; border-radius: 50%; pointer-events: auto;
+        }
+        #joy-stick { 
+            position: absolute; top: 35px; left: 35px; 
+            width: 50px; height: 50px; background: white; border-radius: 50%; pointer-events: none;
+        }
+        #jump-btn { 
+            position: absolute; bottom: 40px; right: 40px; 
+            width: 80px; height: 80px; background: rgba(255,0,0,0.5); 
+            border: 2px solid white; border-radius: 50%; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="joy-base"><div id="joy-stick"></div></div>
+        <div id="jump-btn">JUMP</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+        import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 2.5));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+        sun.position.set(10, 50, 10);
+        scene.add(sun);
+
+        const loader = new GLTFLoader();
+        let player, world;
+        let moveX = 0, moveZ = 0; // Direction values from joystick
+
+        // 1. LOAD ASSETS
+        loader.load('./scene.gltf', (gltf) => {
+            world = gltf.scene;
+            world.scale.set(60, 60, 60);
+            scene.add(world);
+        });
+
+        loader.load('./source/Minecraft/Minecraft.glb', (gltf) => {
+            player = gltf.scene;
+            player.scale.set(10, 10, 10);
+            scene.add(player);
+        });
+
+        // 2. JOYSTICK LOGIC
+        const base = document.getElementById('joy-base');
+        const stick = document.getElementById('joy-stick');
+        
+        base.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = base.getBoundingClientRect();
+            const centerX = rect.left + 60;
+            const centerY = rect.top + 60;
+            
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 50);
+            const angle = Math.atan2(dy, dx);
+            
+            stick.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+            
+            // Normalize movement for the game loop
+            moveX = Math.cos(angle) * (dist/50);
+            moveZ = Math.sin(angle) * (dist/50);
+        });
+
+        base.addEventListener('touchend', () => {
+            stick.style.transform = `translate(0px, 0px)`;
+            moveX = 0; moveZ = 0;
+        });
+
+        // 3. JUMP LOGIC
+        let vY = 0;
+        document.getElementById('jump-btn').ontouchstart = () => {
+            if(player && player.position.y <= 0.1) vY = 0.5;
+        };
+
+        // 4. ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+            if (player) {
+                // Move and Rotate based on Joystick
+                if (Math.abs(moveX) > 0.1 || Math.abs(moveZ) > 0.1) {
+                    // Update Rotation to face direction of movement
+                    const targetAngle = Math.atan2(-moveX, -moveZ);
+                    player.rotation.y = targetAngle;
+                    
+                    // Move character forward relative to where he is facing
+                    player.translateZ(1.0); 
+                }
+
+                // Gravity for jumping
+                player.position.y += vY;
+                if(player.position.y > 0) vY -= 0.02;
+                else { player.position.y = 0; vY = 0; }
+
+                // Camera following behind
+                const cameraOffset = new THREE.Vector3(0, 50, -100);
+                const actualOffset = cameraOffset.applyMatrix4(player.matrixWorld);
+                camera.position.lerp(actualOffset, 0.1);
+                camera.lookAt(player.position.x, player.position.y + 20, player.position.z);
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WyrmGate: Full Controls</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+        
+        /* Joystick UI */
+        #ui { position: absolute; bottom: 40px; left: 0; width: 100%; height: 150px; pointer-events: none; }
+        #joy-base { 
+            position: absolute; bottom: 20px; left: 40px; 
+            width: 120px; height: 120px; background: rgba(255,255,255,0.2); 
+            border: 2px solid white; border-radius: 50%; pointer-events: auto;
+        }
+        #joy-stick { 
+            position: absolute; top: 35px; left: 35px; 
+            width: 50px; height: 50px; background: white; border-radius: 50%; pointer-events: none;
+        }
+        #jump-btn { 
+            position: absolute; bottom: 40px; right: 40px; 
+            width: 80px; height: 80px; background: rgba(255,0,0,0.5); 
+            border: 2px solid white; border-radius: 50%; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center; color: white; font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="joy-base"><div id="joy-stick"></div></div>
+        <div id="jump-btn">JUMP</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+        import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 2.5));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+        sun.position.set(10, 50, 10);
+        scene.add(sun);
+
+        const loader = new GLTFLoader();
+        let player, world;
+        let moveX = 0, moveZ = 0; // Direction values from joystick
+
+        // 1. LOAD ASSETS
+        loader.load('./scene.gltf', (gltf) => {
+            world = gltf.scene;
+            world.scale.set(60, 60, 60);
+            scene.add(world);
+        });
+
+        loader.load('./source/Minecraft/Minecraft.glb', (gltf) => {
+            player = gltf.scene;
+            player.scale.set(10, 10, 10);
+            scene.add(player);
+        });
+
+        // 2. JOYSTICK LOGIC
+        const base = document.getElementById('joy-base');
+        const stick = document.getElementById('joy-stick');
+        
+        base.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = base.getBoundingClientRect();
+            const centerX = rect.left + 60;
+            const centerY = rect.top + 60;
+            
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 50);
+            const angle = Math.atan2(dy, dx);
+            
+            stick.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+            
+            // Normalize movement for the game loop
+            moveX = Math.cos(angle) * (dist/50);
+            moveZ = Math.sin(angle) * (dist/50);
+        });
+
+        base.addEventListener('touchend', () => {
+            stick.style.transform = `translate(0px, 0px)`;
+            moveX = 0; moveZ = 0;
+        });
+
+        // 3. JUMP LOGIC
+        let vY = 0;
+        document.getElementById('jump-btn').ontouchstart = () => {
+            if(player && player.position.y <= 0.1) vY = 0.5;
+        };
+
+        // 4. ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+            if (player) {
+                // Move and Rotate based on Joystick
+                if (Math.abs(moveX) > 0.1 || Math.abs(moveZ) > 0.1) {
+                    // Update Rotation to face direction of movement
+                    const targetAngle = Math.atan2(-moveX, -moveZ);
+                    player.rotation.y = targetAngle;
+                    
+                    // Move character forward relative to where he is facing
+                    player.translateZ(1.0); 
+                }
+
+                // Gravity for jumping
+                player.position.y += vY;
+                if(player.position.y > 0) vY -= 0.02;
+                else { player.position.y = 0; vY = 0; }
+
+                // Camera following behind
+                const cameraOffset = new THREE.Vector3(0, 50, -100);
+                const actualOffset = cameraOffset.applyMatrix4(player.matrixWorld);
+                camera.position.lerp(actualOffset, 0.1);
+                camera.lookAt(player.position.x, player.position.y + 20, player.position.z);
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
